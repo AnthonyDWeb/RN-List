@@ -1,9 +1,13 @@
+import { log } from 'async';
 import React, { useEffect, useState } from 'react'
 import { FlatList, Text, StyleSheet, Image, View, Alert, TouchableOpacity } from 'react-native';
+import WeatherApi from './WeatherApi';
 
 export function List() {
     const [countries, setCountries] = useState([])
-    const [dataCountry, setDataCountry] = useState(false)
+    const [weatherCapital, setWeatherCapital] = useState([])
+    const [isShown, setIsShown] = useState(false)
+    const [capitalSelected, setCapitalSelected] = useState("")
 
 
     useEffect(()=>{
@@ -17,34 +21,59 @@ export function List() {
         }
         getCountries();
         
-    },[])
+        if (countries.capital === capitalSelected){
+            console.log('country selected3' , capitalSelected);
+        }
+        console.log('country selected2' , capitalSelected);
+        console.log('weather' , weatherCapital);
+
+    },[isShown])
     
-    const handlePress = (id) =>{
+
+    const capitalWeather = async(item) => {
+            console.log('country capital' , item.capital);
+            console.log('country selected1' , capitalSelected);
+            const capitalInformation = await WeatherApi(item.capital);
+                console.log('capital information' , capitalInformation);
+            if (capitalInformation.message) {
+                alert("sorry, retry a bit later !")
+            } else {
+                setWeatherCapital(capitalInformation.weather[0].main);
+            }
+            
+        }
+        
+        const handlePress = (item) =>{
+        setCapitalSelected(item.capital)
         console.log("you hit me !")
+        capitalWeather(item)
         Alert.alert("you hit me !")
-        setDataCountry(!dataCountry)
+        setIsShown(true)
     };
-
-    const renderCountrie = ({item}) =>{ 
+    
+    const renderCountry = ({item}) =>{ 
+        
         return (
-        <View style={styles.dataCountrie}>
-            <Text>{item.name}</Text>
-            <View style={styles.dataCapital}>
-                <Text style={styles.text}>{item.capital}</Text>
-                {dataCountry && <>
-                    <Text style={styles.text}>-</Text>
-                    <Text style={styles.text}>Weather</Text>
-                </>}
-            </View>
-            <TouchableOpacity onPress={handlePress}>
-                <Image style={styles.countryFlag} source={{uri: item.flag}} />
-            </TouchableOpacity>
+            <View style={styles.dataCountrie}>
+                <Text>{item.name}</Text>
+                <View style={styles.dataCapital}>
+                    {(isShown && capitalSelected === item.capital) && <>
+                        <Text style={styles.text}>{item.capital}</Text>
+                        <Text style={styles.text}>-</Text>
+                        <Text style={styles.text}>{weatherCapital}</Text>
+                    </>}
+                </View>
+                <TouchableOpacity capital={item.capital} onPress={() => handlePress(item)}>
+                    <Image style={styles.countryFlag} source={{uri: item.flag}} />
+                </TouchableOpacity>
 
-        </View>)
+            </View>
+        )
+
     }
 
     return (
-        <FlatList style={styles.list} data={countries} renderItem={renderCountrie} keyExtractor={(item, index)=> index.toString()}/>
+        <FlatList style={styles.list} data={countries} renderItem={renderCountry} keyExtractor={(item, index)=> index.toString()}/>
     )
 }
 
